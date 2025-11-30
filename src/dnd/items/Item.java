@@ -1,5 +1,7 @@
 package dnd.items;
 
+import dnd.characters.Player;
+
 public abstract class Item {
     protected String name;
     
@@ -11,5 +13,5 @@ public abstract class Item {
         return name; 
     }
     
-    public abstract void use();
+    public abstract void use(Player player);
 }

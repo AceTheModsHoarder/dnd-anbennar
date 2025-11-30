@@ -1,19 +1,35 @@
 package dnd.items;
 
-public class Weapon extends Item {
-    private int attackBoost;
+public class Weapon {
+    private String name;
+    private int attackBonus;
+    private int value;
     
-    public Weapon(String name, int attackBoost) {
-        super(name);
-        this.attackBoost = attackBoost;
+    public Weapon(String name, int attackBonus) {
+        this(name, attackBonus, 0); // Default value for price
     }
     
-    public int getAttackBoost() { 
-        return attackBoost; 
+    public Weapon(String name, int attackBonus, int value) {
+        this.name = name;
+        this.attackBonus = attackBonus;
+        this.value = value;
     }
     
-    @Override
-    public void use() {
-        System.out.println("Equipped " + name + " (+" + attackBoost + " ATK)");
+    // Getters
+    public String getName() { return name; }
+    public int getAttackBonus() { return attackBonus; }
+    public int getValue() { return value; }
+    
+    // Common weapons
+    public static Weapon createDagger() {
+        return new Weapon("Dagger", 2, 15);
+    }
+    
+    public static Weapon createSword() {
+        return new Weapon("Sword", 4, 50);
+    }
+    
+    public static Weapon createAxe() {
+        return new Weapon("Axe", 5, 75);
     }
 }
