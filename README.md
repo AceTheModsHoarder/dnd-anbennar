@@ -1,2 +1,3 @@
 # dnd-anbennar
-trying to make dnd in anbennar for play
+tis only a basic dnd will improve it soon
+
