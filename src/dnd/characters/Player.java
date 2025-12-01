@@ -1,8 +1,8 @@
 package dnd.characters;
 
-import dnd.items.Weapon;
 import dnd.items.Armor;
 import dnd.items.Potion;
+import dnd.items.Weapon;
 import dnd.skills.Skill;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +27,8 @@ public class Player {
     private Armor equippedArmor;
     private List<Object> inventory;
     private List<Skill> skills; // Add this line
+    private int percentArmorPenetration; // Percentage armor ignore (0-100)
+    private int flatArmorPenetration;    // Flat armor reduction
     
     public Player(String name) {
         this.name = name;
@@ -45,6 +47,8 @@ public class Player {
         this.isDefending = false;
         this.inventory = new ArrayList<>();
         this.skills = new ArrayList<>(); // Initialize skills list
+        this.percentArmorPenetration = 0;
+        this.flatArmorPenetration = 0;
         initializeSkills(); // Add basic skills
     }
     
@@ -86,11 +90,15 @@ public class Player {
     public Armor getEquippedArmor() { return equippedArmor; }
     public List<Object> getInventory() { return inventory; }
     public List<Skill> getSkills() { return skills; } // Add this getter
+    public int getPercentArmorPenetration() { return percentArmorPenetration; }
+    public int getFlatArmorPenetration() { return flatArmorPenetration; }
     
     // Setters
     public void setDefending(boolean defending) { this.isDefending = defending; }
     public void setEquippedWeapon(Weapon weapon) { this.equippedWeapon = weapon; }
     public void setEquippedArmor(Armor armor) { this.equippedArmor = armor; }
+    public void setPercentArmorPenetration(int value) { this.percentArmorPenetration = Math.min(100, Math.max(0, value)); }
+    public void setFlatArmorPenetration(int value) { this.flatArmorPenetration = Math.max(0, value); }
     
     // Combat methods
     public void takeDamage(int damage) {
@@ -110,6 +118,18 @@ public class Player {
     
     public void restoreMana(int amount) {
         mana = Math.min(maxMana, mana + amount);
+    }
+
+    public int calculateEffectiveArmor(Monster monster) {
+        int monsterArmor = monster.getArmor();
+        
+        // Apply percentage penetration first
+        double armorAfterPercentPen = monsterArmor * (1.0 - (percentArmorPenetration / 100.0));
+        
+        // Apply flat penetration
+        int effectiveArmor = (int) Math.max(0, armorAfterPercentPen - flatArmorPenetration);
+        
+        return effectiveArmor;
     }
     
     // Inventory methods
@@ -180,17 +200,10 @@ public class Player {
         System.out.println("Weapon: " + (equippedWeapon != null ? equippedWeapon.getName() : "None"));
         System.out.println("Armor: " + (equippedArmor != null ? equippedArmor.getName() : "None"));
         System.out.println("Attack: " + getAttack());
-        System.out.println("Defense: " + getDefense());
         System.out.println("Dexterity: " + dexterity);
-        System.out.println("Armor Class: " + armorClass);
         
-        // Show skills
-        if (!skills.isEmpty()) {
-            System.out.println("\nSkills:");
-            for (Skill skill : skills) {
-                System.out.println("  - " + skill.getName() + " (" + skill.getManaCost() + " MP)");
-            }
-        }
+        // Simplified penetration stats
+        System.out.println("Armor Penetration: " + percentArmorPenetration + "% + " + flatArmorPenetration + " flat");
     }
     
     // Skill methods
@@ -231,5 +244,11 @@ public class Player {
         
         System.out.println("Level up! You are now level " + level + "!");
         System.out.println("HP: " + maxHp + ", MP: " + maxMana + ", Attack: " + attack);
+    }
+
+    // Method for spells/effects to reduce monster resistance
+    public void applyResistanceReduction(Monster target, int reductionAmount) {
+        target.reduceDamageResistance(reductionAmount);
+        System.out.println(target.getName() + "'s damage resistance reduced by " + reductionAmount + "!");
     }
 }
