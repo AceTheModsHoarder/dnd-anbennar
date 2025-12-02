@@ -67,7 +67,7 @@ public class CombatSystem {
         int choice = sc.nextInt();
         
         switch (choice) {
-            case 1 -> performAttack(p, m);
+            case 1 -> performAttack(p, m, null); // Implement the attack action
             case 2 -> useSkill(p, m);
             case 3 -> useItem(p);
             case 4 -> defend(p);
@@ -76,47 +76,67 @@ public class CombatSystem {
         }
     }
     
-    private static void performAttack(Player p, Monster m) {
-    // D&D 5e: Roll d20, add attack bonus, compare to armor class
+    private static void performAttack(Player p, Monster m, CombatResult result) { // Added CombatResult parameter
     int attackRoll = random.nextInt(20) + 1;
     boolean isCritical = (attackRoll == 20);
     
-    // Calculate attack bonus: proficiency + ability modifier
-    int proficiencyBonus = 2 + ((p.getLevel() - 1) / 4); // +2 at level 1-4, +3 at 5-8, etc.
-    int abilityModifier = Math.max(0, (p.getDexterity() - 10) / 2); // Dex mod (min 0)
-    int attackBonus = proficiencyBonus + abilityModifier;
+    // Calculate effective armor after penetration
+    int effectiveArmor = p.calculateEffectiveArmor(m);
+    int monsterResistance = m.getDamageResistance();
     
-    int totalAttack = attackRoll + attackBonus;
+    // LOG: Start of attack
+    StringBuilder log = new StringBuilder();
+    log.append("Attack Roll: ").append(attackRoll);
+    if (isCritical) log.append(" (CRITICAL!)");
     
-    // Monster's armor class (simplified)
-    int monsterAC = 10 + (m.getDexterity() / 2); // Base 10 + half DEX
-    
-    System.out.println("\n=== ATTACK ===");
-    System.out.println("Roll: " + attackRoll + " + Bonus: " + attackBonus + " = " + totalAttack);
-    System.out.println("vs Monster AC: " + monsterAC);
-    
-    if (totalAttack >= monsterAC || isCritical) {
-        // Calculate damage: weapon damage + ability modifier
-        int weaponDamage = p.getAttack(); // This should be just weapon/base damage
-        int abilityDamageMod = Math.max(0, abilityModifier);
-        int baseDamage = weaponDamage + abilityDamageMod;
+    if (attackRoll >= (8 + m.getDexterity()) || isCritical) {
+        int baseDamage = p.getAttack();
+        log.append("\nBase Damage: ").append(baseDamage);
         
         if (isCritical) {
             baseDamage *= 2;
-            System.out.println("CRITICAL HIT!");
+            log.append(" -> ").append(baseDamage).append(" (Critical x2)");
         }
         
-        // Apply armor penetration and calculate final damage
-        int effectiveArmor = p.calculateEffectiveArmor(m);
+        // Calculate post-mitigation damage
         double armorReducedDamage = baseDamage * (100.0 / (100 + effectiveArmor));
-        int finalDamage = (int) Math.max(1, Math.round(armorReducedDamage));
+        log.append("\nAfter Armor (").append(effectiveArmor).append("): ");
+        log.append(baseDamage).append(" * (100 / (100 + ").append(effectiveArmor).append(")) = ");
+        log.append(String.format("%.1f", armorReducedDamage));
         
-        m.takeDamage(baseDamage); // Monster applies resistance
+        // Apply resistance
+        double resistanceFactor = (100.0 - monsterResistance) / 100.0;
+        double finalDamageBeforeMin = armorReducedDamage * resistanceFactor;
+        log.append("\nAfter Resistance (").append(monsterResistance).append("%): ");
+        log.append(String.format("%.1f", armorReducedDamage)).append(" * ").append(String.format("%.2f", resistanceFactor)).append(" = ");
+        log.append(String.format("%.1f", finalDamageBeforeMin));
         
-        System.out.println(p.getName() + " hits for " + finalDamage + " damage!");
-        combatLog.add(p.getName() + " hits " + m.getName() + " for " + finalDamage + " damage!");
+        // Apply minimum damage of 1
+        int finalDamage = (int) Math.max(1, Math.round(finalDamageBeforeMin));
+        log.append("\nFinal Damage (min 1): ").append(finalDamage);
+        
+        // Store the monster's HP before the hit
+        int hpBefore = m.getHp();
+        m.takeDamage(baseDamage);
+        int hpAfter = m.getHp();
+        int actualDamageDealt = hpBefore - hpAfter;
+        
+        log.append("\nMonster HP: ").append(hpBefore).append(" -> ").append(hpAfter);
+        log.append(" (Actual Damage: ").append(actualDamageDealt).append(")");
+        
+        // Add log to CombatResult
+        if (result != null) {
+            result.addDamageLog(log.toString());
+        }
+        
+        System.out.println(p.getName() + " hits " + m.getName() + " for " + actualDamageDealt + " damage!");
+        combatLog.add(p.getName() + " hits " + m.getName() + " for " + actualDamageDealt + " damage!");
         
     } else {
+        log.append("\nMISSED! Needed ").append(8 + m.getDexterity()).append("+");
+        if (result != null) {
+            result.addDamageLog(log.toString());
+        }
         System.out.println("You missed!");
         combatLog.add(p.getName() + " missed " + m.getName());
     }
@@ -193,34 +213,51 @@ public class CombatSystem {
     }
     
     private static void performMonsterAttack(Player p, Monster m) {
-        int attackRoll = random.nextInt(20) + 1;
-        boolean isCritical = (attackRoll == 20);
-        
-        if (attackRoll >= p.getArmorClass() || isCritical) {
-            int baseDamage = m.getAttack();
-            if (isCritical) {
-                baseDamage *= 2;
-                System.out.println("CRITICAL HIT from " + m.getName() + "!");
-            }
-            
-            // Apply defense reduction if player was defending
-            if (p.isDefending()) {
-                baseDamage = Math.max(1, baseDamage / 2);
-            }
-            
-            int finalDamage = Math.max(1, baseDamage - p.getDefense());
-            p.takeDamage(finalDamage);
-            
-            String log = m.getName() + " hits " + p.getName() + " for " + finalDamage + " damage!" + 
-                        (isCritical ? " (Critical!)" : "");
-            System.out.println(log);
-            combatLog.add(log);
-            
-        } else {
-            System.out.println(m.getName() + " missed!");
-            combatLog.add(m.getName() + " missed " + p.getName());
+    int attackRoll = random.nextInt(20) + 1;
+    boolean isCritical = (attackRoll == 20);
+    
+    System.out.println("\n=== MONSTER DAMAGE CALCULATION ===");
+    System.out.println("Monster Attack Roll: " + attackRoll);
+    if (isCritical) System.out.println("CRITICAL HIT!");
+    
+    if (attackRoll >= p.getArmorClass() || isCritical) {
+        int baseDamage = m.getAttack();
+        if (isCritical) {
+            baseDamage *= 2;
         }
+        
+        // Apply defense reduction if player was defending
+        if (p.isDefending()) {
+            baseDamage = Math.max(1, baseDamage / 2);
+            System.out.println("Player is defending! Damage halved.");
+        }
+        
+        int playerDefense = p.getDefense();
+        int finalDamage = Math.max(1, baseDamage - playerDefense);
+        
+        // Show calculation
+        System.out.println("Base Monster Damage: " + m.getAttack());
+        if (isCritical) System.out.println("Critical multiplier: x2 = " + baseDamage);
+        if (p.isDefending()) System.out.println("After defense stance: " + baseDamage);
+        System.out.println("Player Defense: " + playerDefense);
+        System.out.println("Final Damage: " + baseDamage + " - " + playerDefense + " = " + finalDamage);
+        
+        int playerHpBefore = p.getHp();
+        p.takeDamage(finalDamage);
+        int playerHpAfter = p.getHp();
+        
+        System.out.println("Player HP: " + playerHpBefore + " - " + finalDamage + " = " + playerHpAfter);
+        
+        String log = m.getName() + " hits " + p.getName() + " for " + finalDamage + " damage!" + 
+                    (isCritical ? " (Critical!)" : "");
+        System.out.println(log);
+        combatLog.add(log);
+        
+    } else {
+        System.out.println(m.getName() + " missed! (Rolled " + attackRoll + ", needed " + p.getArmorClass() + "+)");
+        combatLog.add(m.getName() + " missed " + p.getName());
     }
+}
     
     private static void useMonsterAbility(Monster m, Player p) {
         System.out.println(m.getName() + " uses a special attack!");

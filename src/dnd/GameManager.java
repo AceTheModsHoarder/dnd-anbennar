@@ -1,19 +1,19 @@
 package dnd;
 
 import dnd.characters.Monster;
+import dnd.characters.MonsterFactory;
 import dnd.characters.Player;
-import dnd.combat.CombatSystem;
 import dnd.items.Armor;
-import dnd.items.Weapon;
-import dnd.items.Consumable; // Changed from Potion
+import dnd.items.Consumable;
 import dnd.items.Potion;
+import dnd.items.Weapon; // Changed from Potion
 import dnd.skills.BasicAttack;
 import dnd.skills.Fireball;
 import dnd.skills.Heal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
-import java.util.List;
-import java.util.ArrayList;
 
 public class GameManager {
     private Scanner sc = new Scanner(System.in);
@@ -64,46 +64,31 @@ public class GameManager {
     // Clear existing monsters
     monsters.clear();
     
-    // Tier 1: Easy Monsters (Level 1-3)
-    monsters.add(Monster.createGoblin());
-    monsters.add(Monster.createRat());
-    monsters.add(Monster.createSpider());
-    monsters.add(Monster.createKobold());
-    monsters.add(Monster.createBandit());
-    monsters.add(Monster.createWolf());
+    // ADD MONSTERS USING MonsterFactory:
+    monsters.add(MonsterFactory.createGoblin());
+    monsters.add(MonsterFactory.createRat());
+    monsters.add(MonsterFactory.createSpider());
+    monsters.add(MonsterFactory.createWolf());
+    monsters.add(MonsterFactory.createOrc());
+    monsters.add(MonsterFactory.createSkeleton());
+    monsters.add(MonsterFactory.createDragon());
+    monsters.add(MonsterFactory.createAncientDragon());
+    monsters.add(MonsterFactory.createVampire());
+    // Add more as needed...
     
-    // Tier 2: Medium Monsters (Level 4-6)
-    monsters.add(Monster.createOrc());
-    monsters.add(Monster.createSkeleton());
-    monsters.add(Monster.createZombie());
-    monsters.add(Monster.createOgre());
-    monsters.add(Monster.createTroll());
-    monsters.add(Monster.createHarpy());
-    
-    // Tier 3: Hard Monsters (Level 7-9)
-    monsters.add(Monster.createDragon());
-    monsters.add(Monster.createMinotaur());
-    monsters.add(Monster.createElemental());
-    monsters.add(Monster.createWraith());
-    monsters.add(Monster.createGiant());
-    monsters.add(Monster.createBasilisk());
-    
-    // Tier 4: Boss Monsters (Level 10+)
-    monsters.add(Monster.createAncientDragon());
-    monsters.add(Monster.createLich());
-    monsters.add(Monster.createDemonLord());
-    monsters.add(Monster.createBeholder());
-    monsters.add(Monster.createHydra());
-    
-    // Special Monsters
-    monsters.add(Monster.createVampire());
-    monsters.add(Monster.createMummy());
-    monsters.add(Monster.createDoppelganger());
-    monsters.add(Monster.createTreant());
-    monsters.add(Monster.createGorgon());
+    // Remove or comment this line unless your friend created it:
+    // monsters.add(MonsterFactory.createYourMonster());
     
     System.out.println("Loaded " + monsters.size() + " different monsters!");
 }
+
+    private int determineMonsterTier(Monster monster) {
+        // Determine tier based on monster HP
+        if (monster.getMaxHp() <= 15) return 1; // Tier 1
+        if (monster.getMaxHp() <= 30) return 2; // Tier 2  
+        if (monster.getMaxHp() <= 50) return 3; // Tier 3
+        return 4; // Tier 4 (Boss)
+    }
     
     private void gameLoop() {
         while (gameRunning && player.isAlive()) {
@@ -273,21 +258,21 @@ public class GameManager {
     }
 
         private void encounterSpecialMonster() {
-        System.out.println("\nA rare creature appears!");
-        
-        // List of special/boss monsters
-        Monster[] specialMonsters = {
-            Monster.createAncientDragon(),
-            Monster.createLich(),
-            Monster.createDemonLord(),
-            Monster.createBeholder(),
-            Monster.createHydra(),
-            Monster.createVampire(),
-            Monster.createGorgon()
-        };
-        
-        Monster specialMonster = specialMonsters[random.nextInt(specialMonsters.length)];
-        System.out.println("It's a " + specialMonster.getName() + "!");
+    System.out.println("\nA rare creature appears!");
+    
+    // List of special/boss monsters - USE MonsterFactory:
+    Monster[] specialMonsters = {
+        MonsterFactory.createAncientDragon(),
+        MonsterFactory.createLich(),
+        MonsterFactory.createDemonLord(),
+        MonsterFactory.createBeholder(),
+        MonsterFactory.createHydra(),
+        MonsterFactory.createVampire(),
+        MonsterFactory.createGorgon()
+    };
+    
+    Monster specialMonster = specialMonsters[random.nextInt(specialMonsters.length)];
+    System.out.println("It's a " + specialMonster.getName() + "!");
         
         // Special monsters give better rewards
         dnd.combat.CombatResult result = dnd.combat.CombatSystem.start(player, specialMonster);
@@ -354,13 +339,7 @@ public class GameManager {
         return armors[random.nextInt(armors.length)];
     }
 
-    private int determineMonsterTier(Monster monster) {
-        // Determine tier based on monster stats
-        if (monster.getMaxHp() <= 15) return 1; // Tier 1
-        if (monster.getMaxHp() <= 30) return 2; // Tier 2  
-        if (monster.getMaxHp() <= 50) return 3; // Tier 3
-        return 4; // Tier 4 (Boss)
-}
+
     
     private void dropLoot() {
         System.out.println("\n=== LOOT DROPPED ===");

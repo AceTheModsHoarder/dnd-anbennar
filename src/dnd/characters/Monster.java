@@ -71,128 +71,34 @@ public class Monster {
     }
     
     public void takeDamage(int rawDamage) {
-        int actualDamage = calculatePostMitigationDamage(rawDamage);
-        hp = Math.max(0, hp - actualDamage);
-        if (hp == 0) {
-            isAlive = false;
-        }
+    // Store original values for logging
+    int originalHP = hp;
+    
+    // Calculate post-mitigation damage (League of Legends formula + flat resistance)
+    double armorReducedDamage = rawDamage * (100.0 / (100 + armor));
+    
+    // Apply flat damage resistance (subtract from damage)
+    double finalDamage = Math.max(1, armorReducedDamage - damageResistance);
+    
+    int actualDamage = (int) Math.round(finalDamage);
+    
+    // Debug logging
+    if (true) { // You can make this conditional
+        System.out.println("\n=== MONSTER DAMAGE CALCULATION ===");
+        System.out.println("Raw Damage: " + rawDamage);
+        System.out.println("Armor: " + armor);
+        System.out.println("Damage after armor: " + rawDamage + " * (100 / (100 + " + armor + ")) = " + 
+                         String.format("%.1f", armorReducedDamage));
+        System.out.println("Damage Resistance: " + damageResistance);
+        System.out.println("Damage after resistance: " + String.format("%.1f", armorReducedDamage) + " - " + 
+                         damageResistance + " = " + String.format("%.1f", finalDamage));
+        System.out.println("Final Damage (rounded): " + actualDamage);
+        System.out.println("HP: " + originalHP + " - " + actualDamage + " = " + (originalHP - actualDamage));
     }
     
-    // Factory methods
-    public static Monster createGoblin() {
-        return new Monster("Goblin", 15, 4, 0, 0);
+    hp = Math.max(0, originalHP - actualDamage);
+    if (hp == 0) {
+        isAlive = false;
     }
-    
-    public static Monster createOrc() {
-        return new Monster("Orc", 25, 6, 10, 2);
-    }
-    
-    public static Monster createDragon() {
-        return new Monster("Dragon", 50, 10, 40, 10);
-    }
-
-    // Tier 1 Monsters (Easy - Level 1-3)
-    public static Monster createRat() {
-        return new Monster("Giant Rat", 8, 3, 5, 0);
-    }
-
-    public static Monster createSpider() {
-        return new Monster("Giant Spider", 10, 4, 6, 1);
-    }
-
-    public static Monster createKobold() {
-        return new Monster("Kobold", 12, 3, 8, 2);
-    }
-
-    public static Monster createBandit() {
-        return new Monster("Bandit", 18, 5, 15, 3);
-    }
-
-    public static Monster createWolf() {
-        return new Monster("Wolf", 12, 6, 5, 8);
-    }
-
-    // Tier 2 Monsters (Medium - Level 4-6)
-    public static Monster createSkeleton() {
-        return new Monster("Skeleton", 20, 5, 30, 0);
-    }
-
-    public static Monster createZombie() {
-        return new Monster("Zombie", 30, 5, 10, 8);
-    }
-
-    public static Monster createOgre() {
-        return new Monster("Ogre", 35, 7, 12, 8);
-    }
-
-    public static Monster createTroll() {
-        return new Monster("Cave Troll", 40, 8, 10, 8);
-    }
-
-    public static Monster createHarpy() {
-        return new Monster("Harpy", 22, 6, 8, 3);
-    }
-
-    // Tier 3 Monsters (Hard - Level 7-9)
-    public static Monster createMinotaur() {
-        return new Monster("Minotaur", 45, 9, 25, 12);
-    }
-
-    public static Monster createElemental() {
-        return new Monster("Fire Elemental", 28, 9, 10, 0);
-    }
-
-    public static Monster createWraith() {
-        return new Monster("Wraith", 25, 6, 8, 15);
-    }
-
-    public static Monster createGiant() {
-        return new Monster("Hill Giant", 70, 10, 20, 12);
-    }
-
-    public static Monster createBasilisk() {
-        return new Monster("Basilisk", 35, 7, 18, 10);
-    }
-
-    // Tier 4 Monsters (Boss - Level 10+)
-    public static Monster createAncientDragon() {
-        return new Monster("Ancient Dragon", 100, 15, 50, 30);
-    }
-
-    public static Monster createLich() {
-        return new Monster("Lich King", 60, 12, 35, 25);
-    }
-
-    public static Monster createDemonLord() {
-        return new Monster("Demon Lord", 80, 12, 40, 25);
-    }
-
-    public static Monster createBeholder() {
-        return new Monster("Beholder", 65, 10, 35, 20);
-    }
-
-    public static Monster createHydra() {
-        return new Monster("Hydra", 90, 11, 30, 15);
-    }
-
-    // Special/Unique Monsters
-    public static Monster createVampire() {
-        return new Monster("Vampire", 40, 8, 20, 15);
-    }
-
-    public static Monster createMummy() {
-        return new Monster("Ancient Mummy", 32, 6, 25, 20);
-}
-
-    public static Monster createDoppelganger() {
-    return new Monster("Doppelganger", 25, 7, 15, 5);
-}
-
-    public static Monster createTreant() {
-    return new Monster("Treant", 55, 8, 30, 18);
-}
-
-    public static Monster createGorgon() {
-    return new Monster("Gorgon", 38, 9, 28, 12);
 }
 }
